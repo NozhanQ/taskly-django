@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Your To-Do List</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #c3ecf3, #f7f1ff);
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: white;
+            margin-top: 50px;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 28px;
+            text-align: center;
+            color: #444;
+        }
+
+        form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 0;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            border-color: #4e7fff;
+            box-shadow: 0 0 0 3px rgba(78, 127, 255, 0.2);
+            outline: none;
+        }
+
+        input[type="checkbox"] {
+            transform: scale(1.3);
+            transition: transform 0.2s ease;
+        }
+
+        input[type="checkbox"]:hover {
+            transform: scale(1.2);
+        }
+
+        button {
+            background-color: #4e7fff;
+            border: none;
+            padding: 15px 15px;
+            color: white;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #3466e3;
+            transform: scale(1.05);
+        }
+
+        ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        @keyframes fadeInUp {
+            0% {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        li {
+            padding: 8px 12px; 
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            animation: fadeInUp 0.3s ease forwards;
+            opacity: 0;
+        }
+
+        .task-title {
+            flex: 1;
+            margin-left: 12px;
+            font-size: 16px;
+            color: #333;
+            line-height: 1.2;
+        }
+
+        .completed {
+            text-decoration: line-through;
+            color: #888;
+        }
+
+        .no-tasks {
+            text-align: center;
+            color: #999;
+            font-style: italic;
+        }
+
+        .icon-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .icon-button svg:hover {
+            transform: scale(1.15);
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        a svg {
+            transition: transform 0.2s ease;
+        }
+
+        a svg:hover {
+            transform: scale(1.15);
+        }
+
+        .edit-form input[type="text"] {
+            width: 100%;
+        }
+
+        .edit-form button {
+            padding: 8px 8px;
+        }
+        a[title="Cancel"]:hover {
+        background-color: #e0e0e0;
+        color: #000;
+        transform: scale(1.05);
+        box-shadow: 0 2px 8px rgba(142, 16, 16, 0.1);
+        }
+        .task-actions {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        margin-left: 10px;
+        }
+
+        .task-actions a,
+        .task-actions .icon-button {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            /*border: 1px solid #ccc;*/
+            border-radius: 8px;
+            background-color: #f4f4f4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .task-actions a:hover,
+        .task-actions .icon-button:hover {
+            background-color: #e2e8ff;
+            transform: scale(1.1);
+            border-color: #4e7fff;
+        }
+        .task-actions svg {
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+ <!-- Logout button fixed to top-right corner -->
+    <div style="position: absolute; top: 20px; right: 30px; z-index: 999;">
+        <form action="{% url 'logout' %}" method="post">
+            {% csrf_token %}
+            <button type="submit"
+                    style="background-color: #ff4d4d; color: white; padding: 8px 14px;
+                           border: none; border-radius: 6px; cursor: pointer;
+                           font-size: 14px; font-weight: bold;
+                           box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+                           transition: background-color 0.2s ease;">
+                 Logout
+            </button>
+        </form>
+    </div>
+<div class="container">
+    <h2>Welcome, {{ request.user.username }}</h2>
+
+    <form method="POST" action="{% url 'task_list' %}">
+        {% csrf_token %}
+        {{ form.title }}
+        <button type="submit">➕ Add</button>
+    </form>
+
+    <ul>
+        {% for task in tasks %}
+            <li id="task-{{ task.id }}">
+                {% if edit_id == task.id %}
+                    <form method="POST" action="{% url 'edit_task' task.id %}" class="edit-form" style="display: flex; width: 100%;">
+                        {% csrf_token %}
+                        <input type="text" name="title" value="{{ task.title }}"
+                            style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px;">
+                        
+                        <button type="submit" title="Save"
+                                style="margin-left: 5px; padding: 10px 10px; background-color: #e6f4ea; cursor: pointer;
+                                    transition: all 0.2s ease;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#28a745" viewBox="0 0 24 24">
+                                <path d="M17 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-5 16a2 2 0 1 1 .001-3.999A2 2 0 0 1 12 19zm3-10H5V5h10v4z"/>
+                            </svg>
+                        </button>
+
+                        <a href="{% url 'task_list' %}" title="Cancel"
+                        style="margin-left: 3px; padding: 10px 10px; background-color: #fbecec; color: #dc3545; border-radius: 6px; text-decoration: none;
+                                cursor: pointer; transition: all 0.2s ease;">
+                            ✖
+                        </a>
+                    </form>
+                {% else %}
+                    <form class="toggle-form" method="POST" action="{% url 'toggle_task' task.id %}" style="display: flex; align-items: center; width: 100%;">
+                        {% csrf_token %}
+                        <input type="checkbox" onchange="this.form.submit()" {% if task.completed %}checked{% endif %}>
+                        <span class="task-title {% if task.completed %}completed{% endif %}">{{ task.title }}</span>
+                    </form>
+                    <div class="task-actions">
+                        <!-- Edit -->
+                        <a href="{% url 'task_list' %}?edit={{ task.id }}" title="Edit" style="margin-top: 0px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#4e7fff" viewBox="0 0 24 24">
+                                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z"/>
+                            </svg>
+                        </a>
+
+                        <!-- Delete -->
+                        <form method="POST" action="{% url 'delete_task' task.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="icon-button" title="Delete">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="red" viewBox="0 0 24 24">
+                                    <path d="M9 3v1H4v2h1v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6h1V4h-5V3H9zm2 4v10h2V7h-2zm-4 0v10h2V7H7zm8 0v10h2V7h-2z"/>
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
+                {% endif %}
+            </li>
+        {% empty %}
+            <p class="no-tasks">No tasks yet. Add one above! ✨</p>
+        {% endfor %}
+    </ul>
+</div>
+</body>
+</html>
+
+<script>
+    document.querySelectorAll(".toggle-form").forEach(form => {
+        form.addEventListener("submit", function () {
+            sessionStorage.setItem("scrollY", window.scrollY);
+        });
+    });
+
+    window.addEventListener("load", function () {
+        const scrollY = sessionStorage.getItem("scrollY");
+        if (scrollY !== null) {
+            window.scrollTo(0, parseInt(scrollY));
+            sessionStorage.removeItem("scrollY");
+        }
+    });
+</script>
