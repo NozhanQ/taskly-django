@@ -7,9 +7,11 @@ from .forms import TaskForm
 
 
 def task_list(request):
-    tasks = Task.objects.filter(user=request.user).order_by("-created_at")
     if not request.user.is_authenticated:
         return redirect("login")
+
+    tasks = Task.objects.filter(user=request.user).order_by("-created_at")
+
     if request.method == "POST":
         form = TaskForm(request.POST)
         if form.is_valid():
@@ -19,6 +21,7 @@ def task_list(request):
             return redirect("task_list")
     else:
         form = TaskForm()
+
     edit_id = request.GET.get("edit")
     if edit_id:
         try:
